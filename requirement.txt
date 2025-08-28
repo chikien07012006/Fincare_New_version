@@ -1,0 +1,15 @@
+asgiref==3.8.1
+backports.zoneinfo==0.2.1
+Django==4.2.23
+pip==25.0.1
+setuptools==75.3.2
+sqlparse==0.5.3
+typing_extensions==4.13.2
+tzdata==2025.2
+wheel==0.45.1
+
+# Python 
+python==3.9.1
+
+# Package/environment manager
+pipenv
