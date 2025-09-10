@@ -3,8 +3,6 @@
 import type React from "react"
 
 import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { Building2, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,19 +10,53 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function LoginPage() {
-  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
+    setError("")
+    
+    // Simulate router push in a standalone environment
+    const router = {
+      push: (path: string) => {
+        console.log(`Navigating to ${path}`);
+        window.location.href = path; // Fallback for local testing
+      }
+    };
 
-    // Simulate login process
-    setTimeout(() => {
+    try {
+      const response = await fetch("http://localhost:8000/api/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Đăng nhập thành công, lưu token và chuyển hướng
+        localStorage.setItem("authToken", data.token)
+        console.log("Login successful! Token:", data.token)
+        router.push("/dashboard")
+      } else {
+        // Xử lý lỗi từ backend
+        const errorMessage = data.error || "Login failed. Please check your credentials."
+        setError(errorMessage)
+      }
+    } catch (err) {
+      // Xử lý lỗi mạng hoặc lỗi khác
+      console.error("Login failed:", err)
+      setError("An unexpected error occurred. Please try again.")
+    } finally {
       setLoading(false)
-      router.push("/dashboard")
-    }, 1500)
+    }
   }
 
   return (
@@ -32,30 +64,47 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+            <a href="/" className="flex items-center gap-2 font-bold text-xl">
               <Building2 className="h-6 w-6 text-primary" />
               <span>FinCare</span>
-            </Link>
+            </a>
           </div>
           <CardTitle className="text-2xl text-center">Welcome back</CardTitle>
           <CardDescription className="text-center">Enter your credentials to access your account</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {error && (
+              <div className="text-sm text-red-500 text-center">{error}</div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="john@example.com" required />
+              <Input
+                id="email"
+                type="email"
+                placeholder="john@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                <a href="/forgot-password" className="text-sm text-primary hover:underline">
                   Forgot password?
-                </Link>
+                </a>
               </div>
               <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••" required />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
                 <Button
                   type="button"
                   variant="ghost"
@@ -79,9 +128,9 @@ export default function LoginPage() {
             </Button>
             <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-primary hover:underline">
+              <a href="/register" className="text-primary hover:underline">
                 Sign up
-              </Link>
+              </a>
             </div>
           </CardFooter>
         </form>
