@@ -5,7 +5,7 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from .models import User
-from .serializers import register, login
+from .serializers import register, login, UserProfileSerializer
 
 class RegisterView(generics.CreateAPIView):
     """
@@ -51,8 +51,8 @@ class UserProfileViewSet(viewsets.ReadOnlyModelViewSet):
     Chỉ cho phép đọc dữ liệu (GET).
     Yêu cầu người dùng đã đăng nhập (authenticated).
     """
+    serializer_class = UserProfileSerializer
     queryset = User.objects.all()
-    serializer_class = register
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):

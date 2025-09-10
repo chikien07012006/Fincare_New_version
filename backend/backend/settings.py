@@ -159,3 +159,10 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+# settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',  # ← Cho browser
+        'rest_framework.authentication.TokenAuthentication',    # ← Cho API calls
+    ],
+}

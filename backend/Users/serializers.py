@@ -26,3 +26,9 @@ class login(serializers.Serializer):
         if email and password:
             return data
         raise serializers.ValidationError("Email and password are required.")
+    
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'full_name', 'date_joined', 'last_login']
