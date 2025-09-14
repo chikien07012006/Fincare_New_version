@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Filter, Search } from "lucide-react"
 import { useDocuments } from "@/contexts/document-context"
 import LoadingAnalysis from "./loading"
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function LoanOptionsPage() {
   const { isSubmitted } = useDocuments()
@@ -53,7 +54,8 @@ export default function LoanOptionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute>
+      <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Matching Loan Options</h2>
         <p className="text-muted-foreground">
@@ -111,5 +113,6 @@ export default function LoanOptionsPage() {
         ))}
               </div>
     </div>
+    </ProtectedRoute>
   )
 }

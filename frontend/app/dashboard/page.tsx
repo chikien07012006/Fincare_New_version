@@ -6,8 +6,54 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { FileText, AlertCircle, Lightbulb, PlusCircle, CheckCircle2, ArrowRight, Clock } from "lucide-react"
 import { useDocuments } from "@/contexts/document-context"
+import { useState, useEffect } from 'react';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function DashboardPage() {
+
+    const [fullName, setFullName] = useState(true);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/api/profile/', {
+                    headers: {
+                        'Authorization': `Token ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json(); 
+                    if (data[0].full_name) { 
+                        setFullName(data[0].full_name);
+                    }
+                } else {
+                    // Nếu token không hợp lệ, xóa token và chuyển hướng
+                    localStorage.removeItem('authToken');
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error("Failed to fetch user data:", error);
+                window.location.href = '/login';
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
+    if (loading) {
+        return <div>Đang tải...</div>;
+    }
+
   const { 
     getProgress,
     getCompletedDocumentsCount,
@@ -104,10 +150,11 @@ export default function DashboardPage() {
     onboardingSteps.find((step) => step.status === "pending")
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute>
+      <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Welcome back, Acme Inc.</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Welcome back, {fullName}</h2>
           <p className="text-muted-foreground">
             Complete your document upload to get personalized loan recommendations
           </p>
@@ -302,5 +349,6 @@ export default function DashboardPage() {
         </Card>
       )}
     </div>
+    </ProtectedRoute>
   )
 }

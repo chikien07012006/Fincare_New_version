@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { FileUploader } from "@/components/file-uploader"
 import { FileText, Building2, CreditCard, Search, Filter, Download, Trash2, Eye, Plus } from "lucide-react"
 import LoadingAnalysis from "../loan-options/loading"
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function DocumentsPage() {
   const router = useRouter()
@@ -91,7 +92,8 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute>
+      <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Document Management</h2>
@@ -341,5 +343,7 @@ export default function DocumentsPage() {
 
 
     </div>
+    </ProtectedRoute>
+    
   )
 }
