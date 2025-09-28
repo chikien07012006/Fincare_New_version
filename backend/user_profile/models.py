@@ -51,7 +51,7 @@ class LoanApplication(models.Model):
     # cách nhận lương: bank_transfer hay cash
 
     additional_info = models.JSONField(null=True, blank=True)  
-    # chỗ chứa thông tin bổ sung (vd: số tháng dự phòng)
+    # chỗ chứa thông tin bổ sung (vd: số tháng dự phòng, months_of_reserve)
 
     created_at = models.DateTimeField(default=timezone.now)
 

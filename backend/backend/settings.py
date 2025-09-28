@@ -163,7 +163,7 @@ CORS_ALLOW_HEADERS = [
 # settings.py
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',  # ← Cho browser
-        'rest_framework.authentication.TokenAuthentication',    # ← Cho API calls
+        'rest_framework.authentication.SessionAuthentication',  # nếu dùng session login
+        'rest_framework.authentication.TokenAuthentication',    # nếu dùng DRF token
     ],
 }

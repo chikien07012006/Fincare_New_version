@@ -3,7 +3,8 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('Users.urls')), # Thêm dòng này để định tuyến API
+    path('api/users/', include('Users.urls')), # Thêm dòng này để định tuyến API
+    path('api/loan_application/', include('user_profile.urls'))
 ]
 # ```
 # eof
@@ -13,7 +14,7 @@ urlpatterns = [
 # Sau khi bạn chạy server Django, các endpoint sẽ có sẵn để frontend gọi:
 
 # * **API Đăng ký**:
-#     * **URL**: `http://localhost:8000/api/register/`
+#     * **URL**: `http://localhost:8000/api/users/register/`
 #     * **Method**: `POST`
 #     * **Body (JSON)**:
 #         ```json
@@ -25,7 +26,7 @@ urlpatterns = [
 #         ```
 
 # * **API Đăng nhập**:
-#     * **URL**: `http://localhost:8000/api/login/`
+#     * **URL**: `http://localhost:8000/api/users/login/`
 #     * **Method**: `POST`
 #     * **Body (JSON)**:
 #         ```json
