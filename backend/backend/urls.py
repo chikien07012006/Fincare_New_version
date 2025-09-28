@@ -4,7 +4,8 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('Users.urls')), # Thêm dòng này để định tuyến API
-    path('api/loan_application/', include('user_profile.urls'))
+    path('api/loan_application/', include('user_profile.urls')),
+    path('api/loan_options/', include('LoanPackages.urls')), # Thêm dòng này để định tuyến API
 ]
 # ```
 # eof

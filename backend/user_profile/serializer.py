@@ -21,7 +21,8 @@ class LoanApplicationSerializer(serializers.ModelSerializer):
         # compute derived fields and scoring inside a transaction
         request = self.context.get("request")
         if request and hasattr(request, "user"):
-            validated_data["user"] = request.user     
+            validated_data["user"] = request.user   
+              
         with transaction.atomic():
             app = LoanApplication.objects.create(**validated_data)
 
