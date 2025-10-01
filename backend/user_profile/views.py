@@ -1,8 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from .serializer import LoanApplicationSerializer, LoanEvaluationSerializer
+from .models import LoanEvaluation
 
 class LoanApplyView(APIView): # Đây là một class-based view, chỉ xử lý các request HTTP được định nghĩa (ở đây là post).
     permission_classes = [IsAuthenticated] # Yêu cầu người dùng phải đăng nhập (authenticated) để truy cập view này.
@@ -22,3 +23,13 @@ class LoanApplyView(APIView): # Đây là một class-based view, chỉ xử lý
             "knockout_reasons": eval_obj.knockout_reasons,
             "score_breakdown": eval_obj.score_breakdown,
         }, status=status.HTTP_201_CREATED)
+
+class LoanEvaluationViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        latest_eval = LoanEvaluation.objects.filter(application__user=request.user).order_by('created_at').last()
+        if not latest_eval:
+            return Response({"detail": "No evaluations found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = LoanEvaluationSerializer(latest_eval)
+        return Response(serializer.data, status=status.HTTP_200_OK)

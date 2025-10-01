@@ -4,9 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "*"
+django = "==4.2.24"
+google-genai = "*"  # Hoặc phiên bản cụ thể như ">=0.1.0"
+djangorestframework = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.8"
+python_version = "3.12"
