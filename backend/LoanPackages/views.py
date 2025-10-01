@@ -38,5 +38,13 @@ class geminiView(APIView):
             return Response({"error": "loan_evaluation and loan_option required"}, status=400)
 
         result = evaluate_with_gemini(application, loan_option)
-
-        return Response(result, status=status.HTTP_200_OK)
+        if result["parsed_result"]:
+            return Response(result["parsed_result"], status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {
+                    "error": "Gemini did not return valid JSON",
+                    "raw_text": result["raw_text"],  # optional: chỉ để debug
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
