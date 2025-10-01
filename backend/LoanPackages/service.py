@@ -36,7 +36,7 @@ Loan Option:
 - Estimated Term: {loan_option.get("estimated_term")}
 - Key Requirement: {loan_option.get("key_requirement")}
 - Average Processing Time: {loan_option.get("average_processing_time")}
-
+l
 Return the output strictly in JSON with the following fields:
 - match_score: number from 0 to 100
 - reasoning: detailed text explaining why with that score
