@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from .serializer import LoanOptionSerializer
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
-from .service import GeminiLoanService
+from .service import evaluate_with_gemini
 
 class LoanOptionView(APIView):
     permission_classes = [IsAuthenticated]
@@ -31,25 +31,12 @@ class geminiView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        # Lấy token từ DRF auth (sẽ tự động xử lý nếu dùng TokenAuthentication)
-        token = request.auth  # Nếu dùng TokenAuthentication, token sẽ được tự động lấy
-        
-        if not token:
-            return JsonResponse({"error": "Token is required"}, status=401)
+        application = request.data.get("loan_evaluation")   # dict
+        loan_option = request.data.get("loan_option")   # dict
 
-        # Lấy dữ liệu từ request body
-        try:
-            data = request.data
-            application = data.get('loan_evaluation')
-            loan_option = data.get('loan_option')
-            if not application or not loan_option:
-                return JsonResponse({"error": "Missing loan_evaluation or loan_option"}, status=400)
-        except Exception:
-            return JsonResponse({"error": "Invalid request data"}, status=400)
+        if not application or not loan_option:
+            return Response({"error": "loan_evaluation and loan_option required"}, status=400)
 
-        service = GeminiLoanService()
-        try:
-            result = service.call_gemini_with_data(token.key, application, loan_option)  # Sử dụng token.key
-            return JsonResponse({"result": result})
-        except ValueError as e:
-            return JsonResponse({"error": str(e)}, status=500)
+        result = evaluate_with_gemini(application, loan_option)
+
+        return Response(result, status=status.HTTP_200_OK)

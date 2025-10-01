@@ -7,6 +7,9 @@ name = "pypi"
 django = "==4.2.24"
 google-genai = "*"  # Hoặc phiên bản cụ thể như ">=0.1.0"
 djangorestframework = "*"
+django-cors-headers = "*"
+mysql-connector-python = "*"
+mysqlclient = "*"
 
 [dev-packages]
 

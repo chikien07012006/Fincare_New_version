@@ -82,7 +82,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'mysql.connector.django',
+        'ENGINE': 'django.db.backends.mysql',
         'NAME': 'fincare',
         'USER': 'root',
         'PASSWORD': 'outtaspace07012006',
