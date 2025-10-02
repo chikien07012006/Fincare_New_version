@@ -11,6 +11,7 @@ import { FileUploader } from "@/components/documents/file-uploader"
 import { IntegrationConnect } from "@/components/documents/integration-connect"
 import { BalanceSheetUploader } from "@/components/documents/balance-sheet-uploader"
 import { BankStatementUploader } from "@/components/documents/bank-statement-uploader"
+import { MockFileUploader } from "@/components/documents/mock-file-uploader"
 import { Plus, Upload, Link2, Edit3, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -514,8 +515,65 @@ export default function DocumentsPage() {
                 }}
               />
             </div>
+          ) : selectedCategory === 'business-identity' ? (
+            <div className="space-y-4">
+              <MockFileUploader
+                category="business-identity"
+                acceptedFileTypes=".pdf,.docx,.jpg,.png"
+                onUploadComplete={(files) => {
+                  toast.success('Documents uploaded successfully!', {
+                    description: `${files.length} file(s) uploaded (Demo mode - not saved to database)`
+                  })
+                  setIsUploadModalOpen(false)
+
+                  // Update document status to show completion
+                  setDocumentData(prev => prev.map(doc =>
+                    doc.categoryId === 'business-identity'
+                      ? { ...doc, status: 'complete', lastUpdated: new Date().toLocaleDateString() }
+                      : doc
+                  ))
+                }}
+                onError={(error) => {
+                  toast.error('Upload failed', {
+                    description: error
+                  })
+                }}
+              />
+            </div>
+          ) : selectedCategory === 'ownership' ? (
+            <div className="space-y-4">
+              <MockFileUploader
+                category="ownership"
+                acceptedFileTypes=".csv,.xlsx,.pdf"
+                onUploadComplete={(files) => {
+                  toast.success('Ownership documents uploaded successfully!', {
+                    description: `${files.length} file(s) uploaded (Demo mode - not saved to database)`
+                  })
+                  setIsUploadModalOpen(false)
+
+                  // Update document status to show completion
+                  setDocumentData(prev => prev.map(doc =>
+                    doc.categoryId === 'ownership'
+                      ? { ...doc, status: 'complete', lastUpdated: new Date().toLocaleDateString() }
+                      : doc
+                  ))
+                }}
+                onError={(error) => {
+                  toast.error('Upload failed', {
+                    description: error
+                  })
+                }}
+              />
+            </div>
           ) : (
-            <FileUploader />
+            <MockFileUploader
+              onUploadComplete={(files) => {
+                toast.success('Files uploaded successfully!', {
+                  description: `${files.length} file(s) uploaded (Demo mode)`
+                })
+                setIsUploadModalOpen(false)
+              }}
+            />
           )}
         </DialogContent>
       </Dialog>
