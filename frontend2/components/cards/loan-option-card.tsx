@@ -1,19 +1,23 @@
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Building2, TrendingUp, Clock, FileText, ArrowRight } from "lucide-react"
-import Link from "next/link"
 
 interface LoanOptionCardProps {
+  id: number
   bankName: string
   productName: string
+  loanType: string
   interestRate: string
   tenor: string
   maxAmount: string
   estimatedScore: number
   requiredDocs: string[]
+  keyRequirement: string
+  averageProcessingTime: string
   features: string[]
   rank: number
+  onApply: () => Promise<void>
+  isSubmitting: boolean
 }
 
 export function LoanOptionCard({
@@ -24,119 +28,80 @@ export function LoanOptionCard({
   maxAmount,
   estimatedScore,
   requiredDocs,
+  keyRequirement,
+  averageProcessingTime,
   features,
   rank,
+  onApply,
+  isSubmitting,
 }: LoanOptionCardProps) {
   const getScoreBadge = (score: number) => {
-    if (score >= 80) return { label: "Excellent Match", variant: "default" as const }
-    if (score >= 60) return { label: "Good Match", variant: "secondary" as const }
-    if (score >= 40) return { label: "Fair Match", variant: "outline" as const }
-    return { label: "Low Match", variant: "outline" as const }
+    if (score >= 80) return { label: "Excellent", variant: "default" as const }
+    if (score >= 60) return { label: "Good", variant: "secondary" as const }
+    return { label: "Fair", variant: "outline" as const }
   }
 
   const scoreBadge = getScoreBadge(estimatedScore)
 
   return (
-    <Card className="hover:shadow-lg transition-shadow relative">
-      {rank === 1 && (
-        <div className="absolute -top-3 left-6">
-          <Badge className="bg-primary text-primary-foreground">Best Match</Badge>
-        </div>
-      )}
+    <Card className="flex flex-col">
       <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <CardTitle className="text-xl">{bankName}</CardTitle>
-                <CardDescription>{productName}</CardDescription>
-              </div>
-            </div>
-          </div>
-          <Badge variant={scoreBadge.variant}>{scoreBadge.label}</Badge>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
-        {/* Key Details */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <TrendingUp className="h-4 w-4" />
-              <span className="text-xs font-medium">Interest Rate</span>
-            </div>
-            <p className="text-lg font-semibold text-foreground">{interestRate}</p>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span className="text-xs font-medium">Tenor</span>
-            </div>
-            <p className="text-lg font-semibold text-foreground">{tenor}</p>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <FileText className="h-4 w-4" />
-              <span className="text-xs font-medium">Max Amount</span>
-            </div>
-            <p className="text-lg font-semibold text-foreground">{maxAmount}</p>
-          </div>
-        </div>
-
-        {/* Estimated Score */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Estimated Approval Score</span>
-          <Badge variant="secondary" className="text-base font-semibold px-3 py-1">
-            {estimatedScore}/100
-          </Badge>
+          <CardTitle>{bankName}</CardTitle>
+          {rank === 1 && <Badge className="bg-primary text-primary-foreground">Best</Badge>}
         </div>
-
-        {/* Features */}
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-foreground">Key Features</p>
-          <ul className="space-y-1.5">
-            {features.map((feature, index) => (
-              <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                <span className="text-primary mt-1">•</span>
-                <span>{feature}</span>
-              </li>
-            ))}
-          </ul>
+        <p className="text-sm text-muted-foreground">{productName}</p>
+      </CardHeader>
+      <CardContent className="space-y-4 flex-grow">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Interest Rate</p>
+            <p className="font-semibold">{interestRate}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Tenor</p>
+            <p className="font-semibold">{tenor}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Max Amount</p>
+            <p className="font-semibold">{maxAmount}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Score</p>
+            <Badge variant={scoreBadge.variant}>{scoreBadge.label}</Badge>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Key Requirement</p>
+            <p className="font-semibold">{keyRequirement}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Processing Time</p>
+            <p className="font-semibold">{averageProcessingTime}</p>
+          </div>
         </div>
-
-        {/* Required Documents */}
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-foreground">Required Documents ({requiredDocs.length})</p>
+        <div>
+          <p className="text-sm text-muted-foreground mb-2">Required Documents</p>
           <div className="flex flex-wrap gap-2">
-            {requiredDocs.slice(0, 3).map((doc, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
+            {requiredDocs.map((doc, index) => (
+              <Badge key={index} variant="outline">
                 {doc}
               </Badge>
             ))}
-            {requiredDocs.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{requiredDocs.length - 3} more
-              </Badge>
-            )}
           </div>
         </div>
+        <div>
+          <p className="text-sm text-muted-foreground mb-2">Features</p>
+          <ul className="list-disc list-inside space-y-1 text-sm text-foreground">
+            {features.map((feature, index) => (
+              <li key={index}>{feature}</li>
+            ))}
+          </ul>
+        </div>
       </CardContent>
-
-      <CardFooter className="flex flex-col sm:flex-row gap-3">
-        <Link href="/dashboard/analysis" className="flex-1">
-          <Button variant="outline" className="w-full bg-transparent">
-            View Analysis
-          </Button>
-        </Link>
-        <Link href="/dashboard/documents" className="flex-1">
-          <Button className="w-full">
-            Apply Now
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </Link>
+      <CardFooter>
+        <Button className="w-full" onClick={onApply} disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : "Apply now"}
+        </Button>
       </CardFooter>
     </Card>
   )

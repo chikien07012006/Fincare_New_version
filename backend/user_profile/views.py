@@ -6,7 +6,7 @@ from .serializer import LoanApplicationSerializer, LoanEvaluationSerializer
 from .models import LoanEvaluation
 
 class LoanApplyView(APIView): # Đây là một class-based view, chỉ xử lý các request HTTP được định nghĩa (ở đây là post).
-    permission_classes = [IsAuthenticated] # Yêu cầu người dùng phải đăng nhập (authenticated) để truy cập view này.
+    # permission_classes = [IsAuthenticated] # Yêu cầu người dùng phải đăng nhập (authenticated) để truy cập view này.
 
     def post(self, request):
         serializer = LoanApplicationSerializer(data=request.data, context={"request": request}) # Tạo instance của LoanApplicationSerializer với dữ liệu từ request (request.data là JSON từ frontend).
@@ -25,7 +25,7 @@ class LoanApplyView(APIView): # Đây là một class-based view, chỉ xử lý
         }, status=status.HTTP_201_CREATED)
 
 class LoanEvaluationViewSet(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         latest_eval = LoanEvaluation.objects.filter(application__user=request.user).order_by('created_at').last()

@@ -15,58 +15,117 @@ import { Slider } from "@/components/ui/slider"
 import { ArrowRight, ArrowLeft, Upload, Building2, User } from "lucide-react"
 
 const INDIVIDUAL_STEPS = [
-  { id: "personal", title: "Personal Information", section: "Step 1" },
-  { id: "income", title: "Income & Employment", section: "Step 2" },
-  { id: "credit", title: "Credit & Debt", section: "Step 3" },
-  { id: "loan", title: "Loan & Collateral", section: "Step 4" },
-  { id: "extras", title: "Additional Information", section: "Step 5" },
+  { id: "income", title: "Income & Employment", section: "Step 1" },
+  { id: "credit", title: "Credit & Debt", section: "Step 2" },
+  { id: "loan", title: "Loan & Collateral", section: "Step 3" },
+  { id: "extras", title: "Additional Information", section: "Step 4" },
 ]
+
+interface FormData {
+  monthlyIncome: number | ""
+  monthlyDebtPayments: number | ""
+  cicGroup: string
+  creditHistoryMonths: number | ""
+  creditUtilizationPct: number | ""
+  numLatePayments24m: number | ""
+  numNewInquiries6m: number | ""
+  creditMixTypes: number | ""
+  loanType: string
+  loanAmount: number | ""
+  downPayment: number | ""
+  vehicleValue: number | "" | null
+  propertyValue: number | "" | null
+  employmentType: string
+  employmentDurationMonths: number | ""
+  salaryPaymentMethod: string
+  additionalInfo: string
+  loanPurpose: string
+  businessLoanAmount: number
+  annualRevenue: string
+  timeInBusiness: string
+  appraisalDoc: File | null
+}
 
 export default function LoanFormPage(): ReactElement {
   const router = useRouter()
   const [userType, setUserType] = useState<"business" | "individual" | null>(null)
   const [currentStep, setCurrentStep] = useState(0)
-  const [formData, setFormData] = useState({
-    // Individual fields
-    fullName: "",
-    age: "",
-    maritalStatus: "",
-    dependents: "",
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formData, setFormData] = useState<FormData>({
     monthlyIncome: "",
-    employmentType: "",
-    employmentDuration: "",
-    salaryPaymentMethod: "",
     monthlyDebtPayments: "",
     cicGroup: "",
     creditHistoryMonths: "",
     creditUtilizationPct: "",
     numLatePayments24m: "",
     numNewInquiries6m: "",
+    creditMixTypes: "",
     loanType: "",
     loanAmount: "",
     downPayment: "",
-    collateralValue: "",
-    appraisalDoc: null as File | null,
+    vehicleValue: null,
+    propertyValue: null,
+    employmentType: "",
+    employmentDurationMonths: "",
+    salaryPaymentMethod: "",
     additionalInfo: "",
-    // Business fields
     loanPurpose: "",
     businessLoanAmount: 50000000,
     annualRevenue: "",
     timeInBusiness: "",
+    appraisalDoc: null,
   })
 
-  const handleSubmit = () => {
-    const dataToSave = { ...formData, userType }
-    localStorage.setItem("loanFormData", JSON.stringify(dataToSave))
-    if (userType === "individual") {
-      router.push("/dashboard-individual/loan-options")
-    } else {
-      router.push("/dashboard/loan-options")
-    }
+  const updateFormData = (field: keyof FormData, value: string | number | File | null) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const updateFormData = (field: string, value: string | number | File | null) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+  const handleSubmit = () => {
+    setIsSubmitting(true)
+    try {
+      // Chuẩn bị dữ liệu để lưu vào localStorage
+      const dataToSave = {
+        userType,
+        ...(userType === "individual"
+          ? {
+              loan_type: formData.loanType === "vehicle" ? "car" : "real_estate",
+              monthly_income: formData.monthlyIncome ? Number(formData.monthlyIncome).toFixed(2) : "0.00",
+              monthly_debt_payments: formData.monthlyDebtPayments ? Number(formData.monthlyDebtPayments).toFixed(2) : "0.00",
+              cic_group: Number(formData.cicGroup) || 1,
+              credit_history_months: Number(formData.creditHistoryMonths) || 0,
+              credit_utilization_pct: Number(formData.creditUtilizationPct) || 0.0,
+              num_late_payments_24m: Number(formData.numLatePayments24m) || 0,
+              num_new_inquiries_6m: Number(formData.numNewInquiries6m) || 0,
+              credit_mix_types: Number(formData.creditMixTypes) || 1,
+              loan_amount: formData.loanAmount ? Number(formData.loanAmount).toFixed(2) : "0.00",
+              down_payment: formData.downPayment ? Number(formData.downPayment).toFixed(2) : "0.00",
+              vehicle_value: formData.loanType === "vehicle" && formData.vehicleValue ? Number(formData.vehicleValue).toFixed(2) : null,
+              property_value: formData.loanType === "real_estate" && formData.propertyValue ? Number(formData.propertyValue).toFixed(2) : null,
+              employment_type: formData.employmentType || null,
+              employment_duration_months: Number(formData.employmentDurationMonths) || 0,
+              salary_payment_method: formData.salaryPaymentMethod || null,
+              additional_info: formData.additionalInfo ? { notes: formData.additionalInfo } : null,
+              appraisal_doc: formData.appraisalDoc ? formData.appraisalDoc.name : null,
+            }
+          : {
+              loanPurpose: formData.loanPurpose,
+              businessLoanAmount: formData.businessLoanAmount,
+              annualRevenue: formData.annualRevenue,
+              timeInBusiness: formData.timeInBusiness,
+            }),
+      }
+
+      // Lưu vào localStorage
+      localStorage.setItem("loanFormData", JSON.stringify(dataToSave))
+
+      // Điều hướng dựa trên userType
+      router.push(userType === "individual" ? "/dashboard-individual/loan-options" : "/dashboard/loan-options")
+    } catch (error) {
+      console.error("Error saving to localStorage:", error)
+      alert("Error saving form data. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const canProceed = () => {
@@ -76,41 +135,53 @@ export default function LoanFormPage(): ReactElement {
 
     const step = INDIVIDUAL_STEPS[currentStep]
     switch (step.id) {
-      case "personal":
-        return formData.fullName && formData.age && formData.maritalStatus && formData.dependents
       case "income":
         return (
           formData.monthlyIncome &&
+          Number(formData.monthlyIncome) > 0 &&
           formData.employmentType &&
-          formData.employmentDuration &&
+          formData.employmentDurationMonths &&
+          Number(formData.employmentDurationMonths) >= 0 &&
           formData.salaryPaymentMethod
         )
       case "credit":
         return (
           formData.monthlyDebtPayments &&
+          Number(formData.monthlyDebtPayments) >= 0 &&
           formData.cicGroup &&
+          Number(formData.cicGroup) >= 1 &&
+          Number(formData.cicGroup) <= 5 &&
           formData.creditHistoryMonths &&
+          Number(formData.creditHistoryMonths) >= 0 &&
           formData.creditUtilizationPct &&
+          Number(formData.creditUtilizationPct) >= 0 &&
+          Number(formData.creditUtilizationPct) <= 100 &&
           formData.numLatePayments24m &&
-          formData.numNewInquiries6m
+          Number(formData.numLatePayments24m) >= 0 &&
+          formData.numNewInquiries6m &&
+          Number(formData.numNewInquiries6m) >= 0 &&
+          formData.creditMixTypes &&
+          Number(formData.creditMixTypes) >= 1
         )
       case "loan":
-        return formData.loanType && formData.loanAmount && formData.downPayment && formData.collateralValue
+        return (
+          formData.loanType &&
+          formData.loanAmount &&
+          Number(formData.loanAmount) > 0 &&
+          formData.downPayment &&
+          Number(formData.downPayment) >= 0 &&
+          (formData.loanType === "vehicle" ? formData.vehicleValue && Number(formData.vehicleValue) > 0 : formData.propertyValue && Number(formData.propertyValue) > 0)
+        )
       default:
         return true
     }
   }
 
   const handleNext = () => {
-    if (userType === "business") {
+    if (userType === "business" || currentStep === INDIVIDUAL_STEPS.length - 1) {
       handleSubmit()
-      return
-    }
-
-    if (currentStep < INDIVIDUAL_STEPS.length - 1) {
-      setCurrentStep(currentStep + 1)
     } else {
-      handleSubmit()
+      setCurrentStep(currentStep + 1)
     }
   }
 
@@ -127,6 +198,11 @@ export default function LoanFormPage(): ReactElement {
     if (file) {
       updateFormData("appraisalDoc", file)
     }
+  }
+
+  // Debug: Ensure updateFormData is defined
+  if (typeof updateFormData !== "function") {
+    console.error("updateFormData is not defined. This should not happen.")
   }
 
   if (userType === null) {
@@ -154,15 +230,11 @@ export default function LoanFormPage(): ReactElement {
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-0.5">•</span>
-                    <span>Personal loans</span>
+                    <span>Car loans</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-0.5">•</span>
-                    <span>Vehicle financing</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-0.5">•</span>
-                    <span>Property loans</span>
+                    <span>Real estate financing</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-0.5">•</span>
@@ -326,7 +398,7 @@ export default function LoanFormPage(): ReactElement {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <Button onClick={handleNext} disabled={!canProceed()}>
+            <Button onClick={handleNext} disabled={!canProceed() || isSubmitting}>
               Submit Application
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -336,11 +408,9 @@ export default function LoanFormPage(): ReactElement {
     )
   }
 
-  // Individual form (5 steps) - existing code
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
         <div className="text-center space-y-4 mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground text-balance">Individual Loan Application</h1>
           <p className="text-lg text-muted-foreground text-pretty">
@@ -348,7 +418,6 @@ export default function LoanFormPage(): ReactElement {
           </p>
         </div>
 
-        {/* Progress Indicator */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-4">
             {INDIVIDUAL_STEPS.map((step, index) => (
@@ -390,68 +459,7 @@ export default function LoanFormPage(): ReactElement {
             <CardDescription>{INDIVIDUAL_STEPS[currentStep].section}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Step 1: Personal Information */}
             {currentStep === 0 && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">
-                    Full Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="fullName"
-                    placeholder="Enter your full name"
-                    value={formData.fullName}
-                    onChange={(e) => updateFormData("fullName", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age">
-                    Age <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    placeholder="Enter your age"
-                    value={formData.age}
-                    onChange={(e) => updateFormData("age", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maritalStatus">
-                    Marital Status <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={formData.maritalStatus}
-                    onValueChange={(value) => updateFormData("maritalStatus", value)}
-                  >
-                    <SelectTrigger id="maritalStatus">
-                      <SelectValue placeholder="Select marital status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="single">Single</SelectItem>
-                      <SelectItem value="married">Married</SelectItem>
-                      <SelectItem value="divorced">Divorced</SelectItem>
-                      <SelectItem value="widowed">Widowed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dependents">
-                    Number of Dependents <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="dependents"
-                    type="number"
-                    placeholder="Enter number of dependents"
-                    value={formData.dependents}
-                    onChange={(e) => updateFormData("dependents", e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Income & Employment */}
-            {currentStep === 1 && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="monthlyIncome">
@@ -462,39 +470,35 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter your monthly income"
                     value={formData.monthlyIncome}
-                    onChange={(e) => updateFormData("monthlyIncome", e.target.value)}
+                    onChange={(e) => updateFormData("monthlyIncome", e.target.value ? Number(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="employmentType">
                     Employment Type <span className="text-destructive">*</span>
                   </Label>
-                  <Select
-                    value={formData.employmentType}
-                    onValueChange={(value) => updateFormData("employmentType", value)}
-                  >
+                  <Select value={formData.employmentType} onValueChange={(value) => updateFormData("employmentType", value)}>
                     <SelectTrigger id="employmentType">
                       <SelectValue placeholder="Select employment type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="full-time">Full-time Employee</SelectItem>
-                      <SelectItem value="part-time">Part-time Employee</SelectItem>
+                      <SelectItem value="permanent">Permanent</SelectItem>
+                      <SelectItem value="contract">Contract</SelectItem>
                       <SelectItem value="self-employed">Self-employed</SelectItem>
-                      <SelectItem value="contract">Contract Worker</SelectItem>
-                      <SelectItem value="business-owner">Business Owner</SelectItem>
+                      <SelectItem value="part-time">Part-time</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="employmentDuration">
+                  <Label htmlFor="employmentDurationMonths">
                     Employment Duration (months) <span className="text-destructive">*</span>
                   </Label>
                   <Input
-                    id="employmentDuration"
+                    id="employmentDurationMonths"
                     type="number"
                     placeholder="Enter duration in months"
-                    value={formData.employmentDuration}
-                    onChange={(e) => updateFormData("employmentDuration", e.target.value)}
+                    value={formData.employmentDurationMonths}
+                    onChange={(e) => updateFormData("employmentDurationMonths", e.target.value ? Number(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -506,8 +510,8 @@ export default function LoanFormPage(): ReactElement {
                     onValueChange={(value) => updateFormData("salaryPaymentMethod", value)}
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="bank-transfer" id="bank-transfer" />
-                      <Label htmlFor="bank-transfer" className="font-normal cursor-pointer">
+                      <RadioGroupItem value="bank_transfer" id="bank_transfer" />
+                      <Label htmlFor="bank_transfer" className="font-normal cursor-pointer">
                         Bank Transfer
                       </Label>
                     </div>
@@ -528,8 +532,7 @@ export default function LoanFormPage(): ReactElement {
               </div>
             )}
 
-            {/* Step 3: Credit & Debt */}
-            {currentStep === 2 && (
+            {currentStep === 1 && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="monthlyDebtPayments">
@@ -540,7 +543,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter monthly debt payments"
                     value={formData.monthlyDebtPayments}
-                    onChange={(e) => updateFormData("monthlyDebtPayments", e.target.value)}
+                    onChange={(e) => updateFormData("monthlyDebtPayments", e.target.value ? Number(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -569,7 +572,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter credit history in months"
                     value={formData.creditHistoryMonths}
-                    onChange={(e) => updateFormData("creditHistoryMonths", e.target.value)}
+                    onChange={(e) => updateFormData("creditHistoryMonths", e.target.value ? Number(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -581,7 +584,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter credit utilization percentage"
                     value={formData.creditUtilizationPct}
-                    onChange={(e) => updateFormData("creditUtilizationPct", e.target.value)}
+                    onChange={(e) => updateFormData("creditUtilizationPct", e.target.value ? Number(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -593,7 +596,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter number of late payments"
                     value={formData.numLatePayments24m}
-                    onChange={(e) => updateFormData("numLatePayments24m", e.target.value)}
+                    onChange={(e) => updateFormData("numLatePayments24m", e.target.value ? Number(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -605,36 +608,44 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter number of new inquiries"
                     value={formData.numNewInquiries6m}
-                    onChange={(e) => updateFormData("numNewInquiries6m", e.target.value)}
+                    onChange={(e) => updateFormData("numNewInquiries6m", e.target.value ? Number(e.target.value) : "")}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="creditMixTypes">
+                    Number of Credit Types <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="creditMixTypes"
+                    type="number"
+                    placeholder="Enter number of credit types"
+                    value={formData.creditMixTypes}
+                    onChange={(e) => updateFormData("creditMixTypes", e.target.value ? Number(e.target.value) : "")}
                   />
                 </div>
               </div>
             )}
 
-            {/* Step 4: Loan & Collateral */}
-            {currentStep === 3 && (
+            {currentStep === 2 && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>
                     Loan Type <span className="text-destructive">*</span>
                   </Label>
-                  <RadioGroup value={formData.loanType} onValueChange={(value) => updateFormData("loanType", value)}>
+                  <RadioGroup
+                    value={formData.loanType}
+                    onValueChange={(value) => updateFormData("loanType", value)}
+                  >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="vehicle" id="vehicle" />
                       <Label htmlFor="vehicle" className="font-normal cursor-pointer">
-                        Vehicle Loan
+                        Car Loan
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="property" id="property" />
-                      <Label htmlFor="property" className="font-normal cursor-pointer">
-                        Property Loan
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="personal" id="personal" />
-                      <Label htmlFor="personal" className="font-normal cursor-pointer">
-                        Personal Loan
+                      <RadioGroupItem value="real_estate" id="real_estate" />
+                      <Label htmlFor="real_estate" className="font-normal cursor-pointer">
+                        Real Estate Loan
                       </Label>
                     </div>
                   </RadioGroup>
@@ -648,7 +659,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter loan amount"
                     value={formData.loanAmount}
-                    onChange={(e) => updateFormData("loanAmount", e.target.value)}
+                    onChange={(e) => updateFormData("loanAmount", e.target.value ? Number(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -660,7 +671,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter down payment"
                     value={formData.downPayment}
-                    onChange={(e) => updateFormData("downPayment", e.target.value)}
+                    onChange={(e) => updateFormData("downPayment", e.target.value ? Number(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -672,8 +683,13 @@ export default function LoanFormPage(): ReactElement {
                     id="collateralValue"
                     type="number"
                     placeholder={`Enter ${formData.loanType === "vehicle" ? "vehicle" : "property"} value`}
-                    value={formData.collateralValue}
-                    onChange={(e) => updateFormData("collateralValue", e.target.value)}
+                    value={formData.loanType === "vehicle" ? formData.vehicleValue ?? "" : formData.propertyValue ?? ""}
+                    onChange={(e) =>
+                      updateFormData(
+                        formData.loanType === "vehicle" ? "vehicleValue" : "propertyValue",
+                        e.target.value ? Number(e.target.value) : ""
+                      )
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -700,8 +716,7 @@ export default function LoanFormPage(): ReactElement {
               </div>
             )}
 
-            {/* Step 5: Additional Information */}
-            {currentStep === 4 && (
+            {currentStep === 3 && (
               <div className="space-y-2">
                 <Label htmlFor="additionalInfo">Additional Information (Optional)</Label>
                 <Textarea
@@ -716,14 +731,17 @@ export default function LoanFormPage(): ReactElement {
           </CardContent>
         </Card>
 
-        {/* Navigation Buttons */}
         <div className="flex items-center justify-between gap-4">
           <Button variant="outline" onClick={handleBack} className="bg-transparent">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <Button onClick={handleNext} disabled={!canProceed()}>
-            {currentStep === INDIVIDUAL_STEPS.length - 1 ? "Submit Application" : "Continue"}
+          <Button onClick={handleNext} disabled={!canProceed() || isSubmitting}>
+            {isSubmitting
+              ? "Submitting..."
+              : currentStep === INDIVIDUAL_STEPS.length - 1
+              ? "Submit Application"
+              : "Continue"}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

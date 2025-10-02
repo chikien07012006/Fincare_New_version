@@ -1,220 +1,504 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { RadarChartComponent } from "@/components/analysis/radar-chart"
-import { BarChartComponent } from "@/components/analysis/bar-chart"
-import { ArrowLeft, Download, Share2 } from "lucide-react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Bar, Radar } from "react-chartjs-2"
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  ChartOptions,
+} from "chart.js"
 
-const mockIndividualAnalysisData = {
-  overallScore: 82,
-  categories: [
-    { category: "Credit Score", score: 88, maxScore: 100, factor: "Credit Score", impact: 18 },
-    { category: "Income Stability", score: 85, maxScore: 100, factor: "Income Stability", impact: 15 },
-    { category: "Debt-to-Income", score: 75, maxScore: 100, factor: "Debt-to-Income", impact: -5 },
-    { category: "Employment History", score: 80, maxScore: 100, factor: "Employment History", impact: 12 },
-    { category: "Credit Utilization", score: 78, maxScore: 100, factor: "Credit Utilization", impact: 8 },
-    { category: "Payment History", score: 90, maxScore: 100, factor: "Payment History", impact: 20 },
-  ],
-  recommendations: [
-    "Your payment history is excellent, which significantly improves your loan approval chances.",
-    "Consider reducing your debt-to-income ratio to qualify for better interest rates.",
-    "Your employment stability is a strong factor in your favor.",
-    "Maintaining low credit utilization will continue to benefit your credit score.",
-  ],
-}
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale
+)
 
-export default function IndividualAnalysisPage() {
-  const [activeTab, setActiveTab] = useState("visual")
+export default function AnalysisPage() {
+  const router = useRouter()
+  const [analysisData, setAnalysisData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const data = localStorage.getItem("loanFormData")
+    if (data) {
+      try {
+        const parsedData = JSON.parse(data)
+        setAnalysisData(parsedData.analysis_result)
+        setIsLoading(false)
+      } catch (err) {
+        console.error("Error parsing loanFormData:", err)
+        setError("Failed to load analysis data. Please try again.")
+        setIsLoading(false)
+      }
+    } else {
+      setError("No analysis data found. Please select a loan option first.")
+      setIsLoading(false)
+    }
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen text-lg text-muted-foreground">
+        Loading analysis...
+      </div>
+    )
+  }
+
+  if (error || !analysisData) {
+    return (
+      <div className="flex justify-center items-center h-screen text-red-500">
+        {error || "No analysis data available."}
+      </div>
+    )
+  }
+
+  // Default values
+  const breakdownScores = {
+    credit_score: analysisData.breakdown_scores?.credit_score || 0,
+    income_stability: analysisData.breakdown_scores?.income_stability || 0,
+    debt_to_income: analysisData.breakdown_scores?.debt_to_income || 0,
+    employment_history: analysisData.breakdown_scores?.employment_history || 0,
+    credit_utilization: analysisData.breakdown_scores?.credit_utilization || 0,
+    payment_history: analysisData.breakdown_scores?.payment_history || 0,
+  }
+
+  // Data for bar chart
+  const barData = {
+    labels: [
+      "Credit Score",
+      "Income Stability",
+      "Debt-to-Income",
+      "Employment History",
+      "Credit Utilization",
+      "Payment History",
+    ],
+    datasets: [
+      {
+        label: "Score Breakdown",
+        data: [
+          breakdownScores.credit_score,
+          breakdownScores.income_stability,
+          breakdownScores.debt_to_income,
+          breakdownScores.employment_history,
+          breakdownScores.credit_utilization,
+          breakdownScores.payment_history,
+        ],
+        backgroundColor: "rgba(34, 197, 94, 0.6)",
+        borderColor: "#22c55e",
+        borderWidth: 1,
+        hoverBackgroundColor: "rgba(34, 197, 94, 0.8)",
+      },
+    ],
+  }
+
+  const barOptions: ChartOptions<"bar"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        ticks: { stepSize: 20, color: "#6b7280" },
+        grid: { color: "rgba(209, 213, 219, 0.2)" },
+      },
+      x: {
+        ticks: { color: "#6b7280" },
+        grid: { display: false },
+      },
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: "#1f2937",
+        titleColor: "#ffffff",
+        bodyColor: "#ffffff",
+      } as any,
+    },
+    animation: {
+      duration: 1000,
+      easing: "easeOutQuad",
+    },
+  }
+
+  // Data for radar chart
+  const radarData = {
+    labels: [
+      "Credit Score",
+      "Income Stability",
+      "Debt-to-Income",
+      "Employment History",
+      "Credit Utilization",
+      "Payment History",
+    ],
+    datasets: [
+      {
+        label: "Key Factors",
+        data: [
+          breakdownScores.credit_score,
+          breakdownScores.income_stability,
+          breakdownScores.debt_to_income,
+          breakdownScores.employment_history,
+          breakdownScores.credit_utilization,
+          breakdownScores.payment_history,
+        ],
+        backgroundColor: "rgba(34, 197, 94, 0.2)",
+        borderColor: "#22c55e",
+        pointBackgroundColor: "#22c55e",
+        pointBorderColor: "#ffffff",
+        pointHoverBackgroundColor: "#ffffff",
+        pointHoverBorderColor: "#22c55e",
+        borderWidth: 2,
+      },
+    ],
+  }
+
+  const radarOptions: ChartOptions<"radar"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 100,
+        ticks: { stepSize: 20, color: "#6b7280" },
+        grid: { color: "rgba(209, 213, 219, 0.2)" },
+        pointLabels: {
+          font: { size: 12, weight: 500 }, // ✅ FIX: dùng số, không dùng "500"
+          color: "#6b7280",
+        },
+      },
+    },
+    plugins: {
+      legend: { position: "top", labels: { color: "#6b7280" } },
+      tooltip: {
+        backgroundColor: "#1f2937",
+        titleColor: "#ffffff",
+        bodyColor: "#ffffff",
+      } as any,
+    },
+    animation: {
+      duration: 1000,
+      easing: "easeOutQuad",
+      onComplete: () => {},
+    },
+  }
+
+  const formatBoldText = (text: string) => {
+    return text.split(/(\*\*[^*]+\*\*)/).map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return (
+          <span key={index} className="font-bold">
+            {part.slice(2, -2)}
+          </span>
+        )
+      }
+      return part
+    })
+  }
+
+  const reasoningLines: string[] = analysisData.reasoning
+    ? analysisData.reasoning
+        .split("\n")
+        .filter((line: string) => line.trim())
+        .map((line: string) => line.trim())
+    : ["No reasoning provided."]
+
+  const structuredReasoning = {
+    summary: reasoningLines[0] || "Overview not available.",
+    strengths: reasoningLines[1] || "Strengths not available.",
+    weaknesses: reasoningLines[2] || "Weaknesses not available.",
+    matchAnalysis:
+      reasoningLines.slice(3).join("\n") ||
+      "Match analysis not available.",
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <Link href="/dashboard-individual/loan-options">
-              <Button variant="ghost" size="sm" className="gap-2 -ml-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Loan Options
-              </Button>
-            </Link>
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground text-balance">Creditworthiness Analysis</h1>
-            <p className="text-lg text-muted-foreground">AI-powered assessment of your loan application strength</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-              <Share2 className="h-4 w-4" />
-              Share
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-              <Download className="h-4 w-4" />
-              Export PDF
-            </Button>
-          </div>
+        {/* Key Metrics Card */}
+        <Card className="bg-gradient-to-r from-gray-50 to-gray-100">
+          <CardHeader>
+            <CardTitle className="text-2xl">Key Financial Metrics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Debt-to-Income Ratio (DTI)
+                </p>
+                <p className="text-lg font-semibold text-foreground">
+                  {analysisData.dti ? `${analysisData.dti.toFixed(2)}%` : "N/A"}
+                  {analysisData.dti && (
+                    <span
+                      className={`ml-2 text-sm ${
+                        analysisData.dti <= 36
+                          ? "text-green-600"
+                          : analysisData.dti <= 50
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      (
+                      {analysisData.dti <= 36
+                        ? "Ideal"
+                        : analysisData.dti <= 50
+                        ? "Moderate"
+                        : "High"}
+                      )
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Loan-to-Value Ratio (LTV)
+                </p>
+                <p className="text-lg font-semibold text-foreground">
+                  {analysisData.ltv ? `${analysisData.ltv.toFixed(2)}%` : "N/A"}
+                  {analysisData.ltv && (
+                    <span
+                      className={`ml-2 text-sm ${
+                        analysisData.ltv <= 80
+                          ? "text-green-600"
+                          : "text-yellow-600"
+                      }`}
+                    >
+                      ({analysisData.ltv <= 80 ? "Ideal" : "High"})
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Loan Readiness Score + Breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="bg-gradient-to-br from-green-50 to-green-100">
+            <CardHeader>
+              <CardTitle className="text-2xl">Loan-Readiness Score</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center items-center">
+                <div className="relative w-40 h-40">
+                  <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      fill="transparent"
+                      stroke="#e5e7eb"
+                      strokeWidth="10"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      fill="transparent"
+                      stroke="url(#progressGradient)"
+                      strokeWidth="10"
+                      strokeDasharray={`${
+                        2 * Math.PI * 45 *
+                        ((analysisData.loan_readiness_score || 0) / 100)
+                      } ${2 * Math.PI * 45}`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+                    <defs>
+                      <linearGradient
+                        id="progressGradient"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="100%"
+                      >
+                        <stop
+                          offset="0%"
+                          style={{ stopColor: "#22c55e", stopOpacity: 1 }}
+                        />
+                        <stop
+                          offset="100%"
+                          style={{ stopColor: "#16a34a", stopOpacity: 1 }}
+                        />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                    <p className="text-4xl font-bold text-foreground">
+                      {analysisData.loan_readiness_score || 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground">out of 100</p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-center mt-4 text-muted-foreground">
+                Your application shows{" "}
+                <span className="font-semibold">
+                  {analysisData.loan_readiness_score >= 80
+                    ? "excellent"
+                    : analysisData.loan_readiness_score >= 60
+                    ? "good"
+                    : analysisData.loan_readiness_score >= 40
+                    ? "fair"
+                    : "poor"}
+                </span>{" "}
+                potential for loan approval
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Score Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Object.entries(breakdownScores).map(
+                  ([key, value]: [string, number]) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between"
+                    >
+                      <p className="text-sm font-bold text-muted-foreground capitalize">
+                        {key.replace("_", " ")} ({value}/100)
+                      </p>
+                      <div className="w-1/2 bg-muted rounded-full h-3">
+                        <div
+                          className="bg-gradient-to-r from-green-500 to-green-700 h-3 rounded-full transition-all duration-500"
+                          style={{ width: `${value}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="visual">Visual Analysis</TabsTrigger>
-            <TabsTrigger value="report">Detailed Report</TabsTrigger>
-          </TabsList>
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Key Factors (Radar)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <Radar data={radarData} options={radarOptions} />
+              </div>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="visual" className="space-y-8 mt-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Loan-Readiness Score Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Loan-Readiness Score</CardTitle>
-                  <CardDescription>Overall assessment of your application</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center justify-center">
-                    <div className="relative h-40 w-40">
-                      <svg className="transform -rotate-90 h-40 w-40">
-                        <circle
-                          cx="80"
-                          cy="80"
-                          r="70"
-                          stroke="currentColor"
-                          strokeWidth="12"
-                          fill="transparent"
-                          className="text-muted"
-                        />
-                        <circle
-                          cx="80"
-                          cy="80"
-                          r="70"
-                          stroke="currentColor"
-                          strokeWidth="12"
-                          fill="transparent"
-                          strokeDasharray={`${2 * Math.PI * 70}`}
-                          strokeDashoffset={`${2 * Math.PI * 70 * (1 - mockIndividualAnalysisData.overallScore / 100)}`}
-                          className="text-primary"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-3xl font-bold text-primary">
-                            {mockIndividualAnalysisData.overallScore}
-                          </div>
-                          <div className="text-xs text-muted-foreground">out of 100</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Your application shows <span className="font-semibold text-foreground">excellent potential</span>{" "}
-                      for loan approval
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Key Factors (Bar)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <Bar data={barData} options={barOptions} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Reasoning */}
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardHeader>
+            <CardTitle className="text-2xl flex items-center gap-2">
+              Analysis Reasoning
+              <Badge variant="secondary" className="text-xs">
+                Insight
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="group">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Summary
+                </h3>
+                <p className="text-sm text-foreground/80 leading-relaxed pl-4 border-l-2 border-green-500/50 group-hover:border-green-600 transition-colors duration-200">
+                  {formatBoldText(structuredReasoning.summary)}
+                </p>
+              </div>
+              <div className="group">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Strengths
+                </h3>
+                <p className="text-sm text-foreground/80 leading-relaxed pl-4 border-l-2 border-green-500/50 group-hover:border-green-600 transition-colors duration-200">
+                  {formatBoldText(structuredReasoning.strengths)}
+                </p>
+              </div>
+              <div className="group">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Weaknesses
+                </h3>
+                <p className="text-sm text-foreground/80 leading-relaxed pl-4 border-l-2 border-green-500/50 group-hover:border-green-600 transition-colors duration-200">
+                  {formatBoldText(structuredReasoning.weaknesses)}
+                </p>
+              </div>
+              <div className="group">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Match Analysis
+                </h3>
+                <p className="text-sm text-foreground/80 leading-relaxed pl-4 border-l-2 border-green-500/50 group-hover:border-green-600 transition-colors duration-200">
+                  {formatBoldText(structuredReasoning.matchAnalysis)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recommendations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">AI Recommendations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(analysisData.improvement_advice || []).map(
+                (advice: string, index: number) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <Badge variant="secondary" className="mt-1">
+                      {index + 1}
+                    </Badge>
+                    <p className="text-sm text-foreground">
+                      {advice || "No advice provided."}
                     </p>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Score Breakdown Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Score Breakdown</CardTitle>
-                  <CardDescription>Individual category performance</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {mockIndividualAnalysisData.categories.map((category, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium text-foreground">{category.category}</h4>
-                        <span className="text-sm font-semibold text-foreground">
-                          {category.score}/{category.maxScore}
-                        </span>
-                      </div>
-                      <Progress value={category.score} className="h-2" />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+                )
+              )}
             </div>
+          </CardContent>
+        </Card>
 
-            <BarChartComponent
-              data={mockIndividualAnalysisData.categories.map((cat) => ({
-                factor: cat.factor,
-                impact: cat.impact,
-              }))}
-            />
-
-            {/* Radar Chart */}
-            <RadarChartComponent data={mockIndividualAnalysisData.categories} />
-
-            {/* Recommendations */}
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Recommendations</CardTitle>
-                <CardDescription>Personalized insights to improve your loan application</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {mockIndividualAnalysisData.recommendations.map((rec, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-xs font-semibold text-primary">{index + 1}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground flex-1">{rec}</p>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-              <Link href="/dashboard-individual/loan-options" className="w-full sm:w-auto">
-                <Button variant="outline" className="w-full bg-transparent">
-                  Back to Loan Options
-                </Button>
-              </Link>
-              <Button className="w-full sm:w-auto">Apply for Selected Loan</Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="report" className="mt-8">
-            <div className="relative">
-              <div className="blur-sm pointer-events-none select-none">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Comprehensive Analysis Report</CardTitle>
-                    <CardDescription>Detailed breakdown of all assessment factors</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="h-32 bg-muted rounded-lg" />
-                    <div className="h-24 bg-muted rounded-lg" />
-                    <div className="h-40 bg-muted rounded-lg" />
-                    <div className="h-32 bg-muted rounded-lg" />
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Card className="max-w-md shadow-lg">
-                  <CardContent className="p-8 text-center space-y-4">
-                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                      <Download className="h-8 w-8 text-primary" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-bold text-foreground">Coming Soon</h3>
-                      <p className="text-muted-foreground">
-                        Detailed report generation is currently under development. Check back soon for comprehensive PDF
-                        reports with in-depth analysis.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+        {/* Nav buttons */}
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={() => router.back()}>
+            Back to Loan Options
+          </Button>
+          <Button className="bg-green-600 hover:bg-green-700">
+            Apply for Selected Loan
+          </Button>
+        </div>
       </div>
     </div>
   )
