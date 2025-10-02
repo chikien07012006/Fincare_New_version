@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
 import { useState } from "react"
+import { UserMenu } from "@/components/auth/user-menu"
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -43,12 +44,7 @@ export function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <Link href="/auth/sign-in">
-              <Button variant="ghost">Sign In</Button>
-            </Link>
-            <Link href="/loan-form">
-              <Button>Get Started</Button>
-            </Link>
+            <UserMenu />
           </div>
 
           <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -70,15 +66,8 @@ export function Navbar() {
             >
               How It Works
             </Link>
-            <div className="flex flex-col gap-2 pt-4">
-              <Link href="/auth/sign-in">
-                <Button variant="ghost" className="w-full">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/loan-form">
-                <Button className="w-full">Get Started</Button>
-              </Link>
+            <div className="pt-4">
+              <UserMenu />
             </div>
           </div>
         )}

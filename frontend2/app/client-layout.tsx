@@ -6,6 +6,7 @@ import { Suspense } from "react"
 import { usePathname } from "next/navigation"
 import { Navbar } from "@/components/common/navbar"
 import { Footer } from "@/components/common/footer"
+import { Toaster } from "sonner"
 
 export function ClientLayout({
   children,
@@ -25,6 +26,7 @@ export function ClientLayout({
         {showFooter && <Footer />}
       </Suspense>
       <Analytics />
+      <Toaster position="top-right" richColors />
     </>
   )
 }

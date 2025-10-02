@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { LoanOptionCard } from "@/components/cards/loan-option-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,8 +9,32 @@ import { Filter, SlidersHorizontal, Grid3x3, TableIcon } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import Image from "next/image"
 
-const mockLoanOptions = [
+interface LoanOption {
+  id: string
+  bankName: string
+  productName: string
+  interestRate: string
+  tenor: string
+  maxAmount: string
+  estimatedScore: number
+  requiredDocs: string[]
+  features: string[]
+}
+
+const getBankLogo = (bankName: string): string => {
+  const logoMap: Record<string, string> = {
+    'Vietcombank': '/vietcombank.svg.png',
+    'BIDV': '/BIDV.svg.png',
+    'Techcombank': '/techcombank.png',
+    'ACB': '/ACB.svg.png',
+    'VPBank': '/VPBank.svg.png'
+  }
+  return logoMap[bankName] || '/vietcombank.svg.png'
+}
+
+const mockLoanOptions_OLD = [
   {
     id: 1,
     bankName: "Vietcombank",
@@ -78,20 +103,73 @@ const mockLoanOptions = [
 ]
 
 export default function LoanOptionsPage() {
-  const [formData, setFormData] = useState<any>(null)
+  const searchParams = useSearchParams()
+  const applicationId = searchParams.get('applicationId') || localStorage.getItem('currentApplicationId')
+
+  const [loanOptions, setLoanOptions] = useState<LoanOption[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid")
 
   useEffect(() => {
-    const data = localStorage.getItem("loanFormData")
-    if (data) {
-      setFormData(JSON.parse(data))
+    async function fetchLoanOptions() {
+      if (!applicationId) {
+        setError('No application ID found. Please submit a loan application first.')
+        setLoading(false)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/loans/options?applicationId=${applicationId}`)
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch loan options')
+        }
+
+        setLoanOptions(data.loans || [])
+      } catch (err: any) {
+        setError(err.message || 'Failed to load loan options')
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [])
+
+    fetchLoanOptions()
+  }, [applicationId])
 
   const getScoreBadge = (score: number) => {
     if (score >= 80) return { label: "Excellent", variant: "default" as const, color: "bg-primary" }
     if (score >= 60) return { label: "Good", variant: "secondary" as const, color: "bg-secondary" }
     return { label: "Fair", variant: "outline" as const, color: "bg-muted" }
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <p className="text-lg text-muted-foreground">Loading loan options...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-destructive/10 text-destructive px-6 py-4 rounded-md">
+            <p className="font-semibold">Error loading loan options</p>
+            <p className="text-sm mt-1">{error}</p>
+            <Link href="/loan-form" className="text-sm underline mt-2 inline-block">
+              Go back to loan form
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -103,7 +181,7 @@ export default function LoanOptionsPage() {
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-foreground text-balance">Your Loan Matches</h1>
               <p className="text-lg text-muted-foreground mt-2">
-                We found {mockLoanOptions.length} loan options based on your requirements
+                We found {loanOptions.length} loan options based on your requirements
               </p>
             </div>
 
@@ -140,32 +218,19 @@ export default function LoanOptionsPage() {
           </div>
         </div>
 
-        {/* Summary Card */}
-        {formData && (
-          <Card className="bg-secondary/50 border-primary/20">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Business Type</p>
-                  <p className="font-semibold text-foreground capitalize">{formData.userType?.replace("-", " ")}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Loan Amount</p>
-                  <p className="font-semibold text-foreground">{Number(formData.loanAmount).toLocaleString()} VND</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Purpose</p>
-                  <p className="font-semibold text-foreground capitalize">{formData.loanPurpose?.replace("-", " ")}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Info Card */}
+        <Card className="bg-secondary/50 border-primary/20">
+          <CardContent className="p-6">
+            <p className="text-sm text-muted-foreground">
+              Click on any loan option to view details, or use the "Analyze" button to see a comprehensive credit analysis report tailored to that specific loan product.
+            </p>
+          </CardContent>
+        </Card>
 
         {viewMode === "grid" ? (
           // Grid View - multiple columns
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {mockLoanOptions.map((loan, index) => (
+            {loanOptions.map((loan: LoanOption, index: number) => (
               <LoanOptionCard key={loan.id} {...loan} rank={index + 1} />
             ))}
           </div>
@@ -186,7 +251,7 @@ export default function LoanOptionsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockLoanOptions.map((loan, index) => {
+                  {loanOptions.map((loan: LoanOption, index: number) => {
                     const scoreBadge = getScoreBadge(loan.estimatedScore)
                     return (
                       <TableRow key={loan.id}>
@@ -195,9 +260,20 @@ export default function LoanOptionsPage() {
                           {index + 1}
                         </TableCell>
                         <TableCell>
-                          <div>
-                            <p className="font-semibold text-foreground">{loan.bankName}</p>
-                            <p className="text-sm text-muted-foreground">{loan.productName}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-white border border-border flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
+                              <Image
+                                src={getBankLogo(loan.bankName)}
+                                alt={`${loan.bankName} logo`}
+                                width={40}
+                                height={40}
+                                className="object-contain"
+                              />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground">{loan.bankName}</p>
+                              <p className="text-sm text-muted-foreground">{loan.productName}</p>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>{loan.interestRate}</TableCell>
@@ -227,19 +303,7 @@ export default function LoanOptionsPage() {
           </Card>
         )}
 
-        {/* Help Section */}
-        <Card className="bg-muted/30">
-          <CardContent className="p-6 text-center space-y-4">
-            <h3 className="text-xl font-semibold text-foreground">Need Help Choosing?</h3>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              View detailed analysis for each loan option to understand your approval chances and get personalized
-              recommendations.
-            </p>
-            <Link href="/dashboard/analysis">
-              <Button variant="outline">View Detailed Analysis</Button>
-            </Link>
-          </CardContent>
-        </Card>
+        
       </div>
     </div>
   )

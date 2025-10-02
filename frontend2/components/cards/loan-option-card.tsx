@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Building2, TrendingUp, Clock, FileText, ArrowRight } from "lucide-react"
+import { TrendingUp, Clock, FileText, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 interface LoanOptionCardProps {
+  id: string
   bankName: string
   productName: string
   interestRate: string
@@ -16,7 +18,19 @@ interface LoanOptionCardProps {
   rank: number
 }
 
+const getBankLogo = (bankName: string): string => {
+  const logoMap: Record<string, string> = {
+    'Vietcombank': '/vietcombank.svg.png',
+    'BIDV': '/BIDV.svg.png',
+    'Techcombank': '/techcombank.png',
+    'ACB': '/ACB.svg.png',
+    'VPBank': '/VPBank.svg.png'
+  }
+  return logoMap[bankName] || '/vietcombank.svg.png'
+}
+
 export function LoanOptionCard({
+  id,
   bankName,
   productName,
   interestRate,
@@ -27,6 +41,7 @@ export function LoanOptionCard({
   features,
   rank,
 }: LoanOptionCardProps) {
+  const applicationId = typeof window !== 'undefined' ? localStorage.getItem('currentApplicationId') : null
   const getScoreBadge = (score: number) => {
     if (score >= 80) return { label: "Excellent Match", variant: "default" as const }
     if (score >= 60) return { label: "Good Match", variant: "secondary" as const }
@@ -35,6 +50,7 @@ export function LoanOptionCard({
   }
 
   const scoreBadge = getScoreBadge(estimatedScore)
+  const bankLogo = getBankLogo(bankName)
 
   return (
     <Card className="hover:shadow-lg transition-shadow relative">
@@ -47,8 +63,14 @@ export function LoanOptionCard({
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
+              <div className="h-12 w-12 rounded-lg bg-white border border-border flex items-center justify-center p-1.5 overflow-hidden">
+                <Image
+                  src={bankLogo}
+                  alt={`${bankName} logo`}
+                  width={48}
+                  height={48}
+                  className="object-contain"
+                />
               </div>
               <div>
                 <CardTitle className="text-xl">{bankName}</CardTitle>
@@ -126,14 +148,14 @@ export function LoanOptionCard({
       </CardContent>
 
       <CardFooter className="flex flex-col sm:flex-row gap-3">
-        <Link href="/dashboard/analysis" className="flex-1">
+        <Link href={`/dashboard/analysis?loanProductId=${id}&applicationId=${applicationId}`} className="flex-1">
           <Button variant="outline" className="w-full bg-transparent">
             View Analysis
           </Button>
         </Link>
-        <Link href="/dashboard/documents" className="flex-1">
+        <Link href={`/dashboard/documents?applicationId=${applicationId}`} className="flex-1">
           <Button className="w-full">
-            Apply Now
+            Complete Documents
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </Link>

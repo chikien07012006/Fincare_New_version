@@ -55,13 +55,52 @@ export default function LoanFormPage(): ReactElement {
     timeInBusiness: "",
   })
 
-  const handleSubmit = () => {
-    const dataToSave = { ...formData, userType }
-    localStorage.setItem("loanFormData", JSON.stringify(dataToSave))
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [baselineScore, setBaselineScore] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async () => {
     if (userType === "individual") {
+      // Individual flow - use existing localStorage approach for now
+      const dataToSave = { ...formData, userType }
+      localStorage.setItem("loanFormData", JSON.stringify(dataToSave))
       router.push("/dashboard-individual/loan-options")
-    } else {
-      router.push("/dashboard/loan-options")
+      return
+    }
+
+    // Business flow - call baseline API
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/loans/calculate-baseline', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          loanAmount: formData.businessLoanAmount,
+          loanPurpose: formData.loanPurpose,
+          annualRevenue: formData.annualRevenue,
+          timeInBusiness: formData.timeInBusiness,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to calculate baseline score')
+      }
+
+      // Store application ID and baseline score
+      localStorage.setItem('currentApplicationId', data.application.id)
+      setBaselineScore(data.baselineScore)
+
+      // Redirect to loan options with application ID
+      router.push(`/dashboard/loan-options?applicationId=${data.application.id}`)
+    } catch (err: any) {
+      setError(err.message || 'An error occurred. Please try again.')
+      setIsSubmitting(false)
     }
   }
 
@@ -321,14 +360,20 @@ export default function LoanFormPage(): ReactElement {
             </CardContent>
           </Card>
 
+          {error && (
+            <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="flex items-center justify-between gap-4">
-            <Button variant="outline" onClick={() => setUserType(null)} className="bg-transparent">
+            <Button variant="outline" onClick={() => setUserType(null)} className="bg-transparent" disabled={isSubmitting}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <Button onClick={handleNext} disabled={!canProceed()}>
-              Submit Application
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting}>
+              {isSubmitting ? 'Calculating Score...' : 'Submit Application'}
+              {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
           </div>
         </div>
