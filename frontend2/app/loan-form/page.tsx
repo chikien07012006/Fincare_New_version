@@ -14,6 +14,21 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Slider } from "@/components/ui/slider"
 import { ArrowRight, ArrowLeft, Upload, Building2, User } from "lucide-react"
 
+// Utility function to format number to Vietnamese currency format
+const formatVND = (value: number | string | ""): string => {
+  if (value === "" || value === null) return ""
+  const num = typeof value === "string" ? parseFloat(value.replace(/[^0-9]/g, "")) : value
+  if (isNaN(num)) return ""
+  return num.toLocaleString("vi-VN")
+}
+
+// Utility function to parse VND string to number
+const parseVND = (value: string): number | "" => {
+  if (!value) return ""
+  const cleaned = value.replace(/[^0-9]/g, "")
+  return cleaned ? parseFloat(cleaned) : ""
+}
+
 const INDIVIDUAL_STEPS = [
   { id: "income", title: "Income & Employment", section: "Step 1" },
   { id: "credit", title: "Credit & Debt", section: "Step 2" },
@@ -83,7 +98,6 @@ export default function LoanFormPage(): ReactElement {
   const handleSubmit = () => {
     setIsSubmitting(true)
     try {
-      // Chuẩn bị dữ liệu để lưu vào localStorage
       const dataToSave = {
         userType,
         ...(userType === "individual"
@@ -115,10 +129,7 @@ export default function LoanFormPage(): ReactElement {
             }),
       }
 
-      // Lưu vào localStorage
       localStorage.setItem("loanFormData", JSON.stringify(dataToSave))
-
-      // Điều hướng dựa trên userType
       router.push(userType === "individual" ? "/dashboard-individual/loan-options" : "/dashboard/loan-options")
     } catch (error) {
       console.error("Error saving to localStorage:", error)
@@ -198,11 +209,6 @@ export default function LoanFormPage(): ReactElement {
     if (file) {
       updateFormData("appraisalDoc", file)
     }
-  }
-
-  // Debug: Ensure updateFormData is defined
-  if (typeof updateFormData !== "function") {
-    console.error("updateFormData is not defined. This should not happen.")
   }
 
   if (userType === null) {
@@ -341,10 +347,11 @@ export default function LoanFormPage(): ReactElement {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">10M VND</span>
                     <Input
-                      type="number"
-                      value={formData.businessLoanAmount}
-                      onChange={(e) => updateFormData("businessLoanAmount", Number(e.target.value))}
+                      type="text"
+                      value={formatVND(formData.businessLoanAmount)}
+                      onChange={(e) => updateFormData("businessLoanAmount", parseVND(e.target.value))}
                       className="w-48 text-center font-semibold"
+                      placeholder="Enter amount"
                     />
                     <span className="text-sm text-muted-foreground">10B VND</span>
                   </div>
@@ -467,10 +474,10 @@ export default function LoanFormPage(): ReactElement {
                   </Label>
                   <Input
                     id="monthlyIncome"
-                    type="number"
+                    type="text"
                     placeholder="Enter your monthly income"
-                    value={formData.monthlyIncome}
-                    onChange={(e) => updateFormData("monthlyIncome", e.target.value ? Number(e.target.value) : "")}
+                    value={formatVND(formData.monthlyIncome)}
+                    onChange={(e) => updateFormData("monthlyIncome", parseVND(e.target.value))}
                   />
                 </div>
                 <div className="space-y-2">
@@ -482,7 +489,7 @@ export default function LoanFormPage(): ReactElement {
                       <SelectValue placeholder="Select employment type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="permanent">Permanent</SelectItem>
+                      <SelectItem value="full-time">Full-time</SelectItem>
                       <SelectItem value="contract">Contract</SelectItem>
                       <SelectItem value="self-employed">Self-employed</SelectItem>
                       <SelectItem value="part-time">Part-time</SelectItem>
@@ -498,7 +505,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter duration in months"
                     value={formData.employmentDurationMonths}
-                    onChange={(e) => updateFormData("employmentDurationMonths", e.target.value ? Number(e.target.value) : "")}
+                    onChange={(e) => updateFormData("employmentDurationMonths", e.target.value ? parseInt(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -540,10 +547,10 @@ export default function LoanFormPage(): ReactElement {
                   </Label>
                   <Input
                     id="monthlyDebtPayments"
-                    type="number"
+                    type="text"
                     placeholder="Enter monthly debt payments"
-                    value={formData.monthlyDebtPayments}
-                    onChange={(e) => updateFormData("monthlyDebtPayments", e.target.value ? Number(e.target.value) : "")}
+                    value={formatVND(formData.monthlyDebtPayments)}
+                    onChange={(e) => updateFormData("monthlyDebtPayments", parseVND(e.target.value))}
                   />
                 </div>
                 <div className="space-y-2">
@@ -572,7 +579,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter credit history in months"
                     value={formData.creditHistoryMonths}
-                    onChange={(e) => updateFormData("creditHistoryMonths", e.target.value ? Number(e.target.value) : "")}
+                    onChange={(e) => updateFormData("creditHistoryMonths", e.target.value ? parseInt(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -581,10 +588,10 @@ export default function LoanFormPage(): ReactElement {
                   </Label>
                   <Input
                     id="creditUtilizationPct"
-                    type="number"
+                    type="text"
                     placeholder="Enter credit utilization percentage"
-                    value={formData.creditUtilizationPct}
-                    onChange={(e) => updateFormData("creditUtilizationPct", e.target.value ? Number(e.target.value) : "")}
+                    value={formData.creditUtilizationPct !== "" ? formData.creditUtilizationPct.toString() : ""}
+                    onChange={(e) => updateFormData("creditUtilizationPct", e.target.value ? parseFloat(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -596,7 +603,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter number of late payments"
                     value={formData.numLatePayments24m}
-                    onChange={(e) => updateFormData("numLatePayments24m", e.target.value ? Number(e.target.value) : "")}
+                    onChange={(e) => updateFormData("numLatePayments24m", e.target.value ? parseInt(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -608,7 +615,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter number of new inquiries"
                     value={formData.numNewInquiries6m}
-                    onChange={(e) => updateFormData("numNewInquiries6m", e.target.value ? Number(e.target.value) : "")}
+                    onChange={(e) => updateFormData("numNewInquiries6m", e.target.value ? parseInt(e.target.value) : "")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -620,7 +627,7 @@ export default function LoanFormPage(): ReactElement {
                     type="number"
                     placeholder="Enter number of credit types"
                     value={formData.creditMixTypes}
-                    onChange={(e) => updateFormData("creditMixTypes", e.target.value ? Number(e.target.value) : "")}
+                    onChange={(e) => updateFormData("creditMixTypes", e.target.value ? parseInt(e.target.value) : "")}
                   />
                 </div>
               </div>
@@ -656,10 +663,10 @@ export default function LoanFormPage(): ReactElement {
                   </Label>
                   <Input
                     id="loanAmount"
-                    type="number"
+                    type="text"
                     placeholder="Enter loan amount"
-                    value={formData.loanAmount}
-                    onChange={(e) => updateFormData("loanAmount", e.target.value ? Number(e.target.value) : "")}
+                    value={formatVND(formData.loanAmount)}
+                    onChange={(e) => updateFormData("loanAmount", parseVND(e.target.value))}
                   />
                 </div>
                 <div className="space-y-2">
@@ -668,10 +675,10 @@ export default function LoanFormPage(): ReactElement {
                   </Label>
                   <Input
                     id="downPayment"
-                    type="number"
+                    type="text"
                     placeholder="Enter down payment"
-                    value={formData.downPayment}
-                    onChange={(e) => updateFormData("downPayment", e.target.value ? Number(e.target.value) : "")}
+                    value={formatVND(formData.downPayment)}
+                    onChange={(e) => updateFormData("downPayment", parseVND(e.target.value))}
                   />
                 </div>
                 <div className="space-y-2">
@@ -681,13 +688,13 @@ export default function LoanFormPage(): ReactElement {
                   </Label>
                   <Input
                     id="collateralValue"
-                    type="number"
+                    type="text"
                     placeholder={`Enter ${formData.loanType === "vehicle" ? "vehicle" : "property"} value`}
-                    value={formData.loanType === "vehicle" ? formData.vehicleValue ?? "" : formData.propertyValue ?? ""}
+                    value={formatVND(formData.loanType === "vehicle" ? formData.vehicleValue ?? "" : formData.propertyValue ?? "")}
                     onChange={(e) =>
                       updateFormData(
                         formData.loanType === "vehicle" ? "vehicleValue" : "propertyValue",
-                        e.target.value ? Number(e.target.value) : ""
+                        parseVND(e.target.value)
                       )
                     }
                   />

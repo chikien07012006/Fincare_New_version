@@ -16,11 +16,13 @@ interface LoanOptionCardProps {
   averageProcessingTime: string
   features: string[]
   rank: number
+  logo?: string // Logo là tùy chọn
   onApply: () => Promise<void>
   isSubmitting: boolean
 }
 
 export function LoanOptionCard({
+  id,
   bankName,
   productName,
   interestRate,
@@ -32,6 +34,7 @@ export function LoanOptionCard({
   averageProcessingTime,
   features,
   rank,
+  logo,
   onApply,
   isSubmitting,
 }: LoanOptionCardProps) {
@@ -42,15 +45,42 @@ export function LoanOptionCard({
   }
 
   const scoreBadge = getScoreBadge(estimatedScore)
+  const rankBadge = rank === 1 ? "Best" : rank <= 3 ? `#${rank} Top` : `#${rank}`
+
+  const handleApplyClick = async () => {
+    try {
+      await onApply()
+    } catch (error) {
+      console.error("Error applying for loan option:", error)
+      // Có thể thêm alert hoặc thông báo lỗi cho người dùng nếu cần
+    }
+  }
 
   return (
     <Card className="flex flex-col">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>{bankName}</CardTitle>
-          {rank === 1 && <Badge className="bg-primary text-primary-foreground">Best</Badge>}
+      <CardHeader className="flex flex-row items-center justify-between p-4">
+        <div className="flex items-center gap-2">
+          {logo && (
+            <img
+              src={logo}
+              alt={`${bankName} logo`}
+              className="h-10 w-10 object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/images/banks/default-logo.png" // Fallback logo
+              }}
+            />
+          )}
+          <div>
+            <CardTitle className="text-lg font-semibold">{bankName}</CardTitle>
+            <p className="text-sm text-muted-foreground">{productName}</p>
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground">{productName}</p>
+        <Badge
+          variant={rank === 1 ? "default" : rank <= 3 ? "secondary" : "outline"}
+          className={rank === 1 ? "bg-primary text-primary-foreground" : ""}
+        >
+          {rankBadge}
+        </Badge>
       </CardHeader>
       <CardContent className="space-y-4 flex-grow">
         <div className="grid grid-cols-2 gap-4">
@@ -99,7 +129,7 @@ export function LoanOptionCard({
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full" onClick={onApply} disabled={isSubmitting}>
+        <Button className="w-full" onClick={handleApplyClick} disabled={isSubmitting}>
           {isSubmitting ? "Submitting..." : "Apply now"}
         </Button>
       </CardFooter>
